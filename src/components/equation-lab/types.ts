@@ -52,3 +52,5 @@ export type DragData =
       type: "placed"
       term: PlacedTerm
     }
+
+export type KeypadField = "coefficient" | "constant" | "solution"

@@ -1,7 +1,6 @@
 "use client"
 import { useDraggable } from "@dnd-kit/core"
 import { MathJax } from "better-react-mathjax"
-import { RefreshCcw } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -65,6 +64,13 @@ export function TermCard({
 
   const showToggle = !isSource && typeof onToggleSign === "function"
 
+  const handleCardClick = () => {
+    if (!showToggle) {
+      return
+    }
+    onToggleSign?.(id)
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -74,7 +80,7 @@ export function TermCard({
           : undefined
       }
       className={cn(
-        "relative flex cursor-grab flex-col items-center justify-center gap-1 rounded-lg border px-4 py-3 text-lg font-semibold text-foreground shadow-sm transition-colors",
+        "relative flex cursor-grab flex-col items-center justify-center gap-2 rounded-lg border px-4 py-4 text-lg font-semibold text-foreground shadow-sm transition-colors",
         statusClass,
         isActive && "border-primary bg-primary/15 shadow-md",
         isDragging && "opacity-0"
@@ -82,25 +88,12 @@ export function TermCard({
       aria-label={ariaLabel}
       data-side={side}
       data-type={isSource ? "source" : "placed"}
+      onClick={handleCardClick}
       {...listeners}
       {...attributes}
     >
-      {showToggle && (
-        <button
-          type="button"
-          onClick={(event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            onToggleSign?.(id)
-          }}
-          aria-label="符号を切り替える"
-          className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background/90 text-muted-foreground transition hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <RefreshCcw className="h-3.5 w-3.5" />
-        </button>
-      )}
       <MathJax inline dynamic>
-        {`\(${formatCardTeX(coeff, isVariable)}\)`}
+        {"\\(" + formatCardTeX(coeff, isVariable) + "\\)"}
       </MathJax>
       {showTypeLabel ? (
         <span className="text-xs font-medium text-muted-foreground">
@@ -139,7 +132,7 @@ export function DragPreview({ data, labels, showHelper }: DragPreviewProps) {
         statusClass
       )}
     >
-      <MathJax inline dynamic>{`\(${formatCardTeX(coeff, isVariable)}\)`}</MathJax>
+      <MathJax inline dynamic>{"\\(" + formatCardTeX(coeff, isVariable) + "\\)"}</MathJax>
       {showLabel ? (
         <span className="text-xs font-medium text-muted-foreground">{typeLabel}</span>
       ) : null}

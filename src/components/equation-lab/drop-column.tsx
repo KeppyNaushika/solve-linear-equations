@@ -3,12 +3,7 @@ import { useDroppable } from "@dnd-kit/core"
 
 import { cn } from "@/lib/utils"
 
-import type {
-  DragData,
-  PlacedTerm,
-  Side,
-  TermLabels,
-} from "./types"
+import type { DragData, PlacedTerm, Side, TermLabels } from "./types"
 import {
   getPlacedCoeff,
   isTermPositionCorrect,
@@ -22,7 +17,6 @@ import { TermCard } from "./term-card"
 
 type DropColumnProps = {
   id: Side
-  label: string
   terms: PlacedTerm[]
   activeId: string | null
   onToggleSign: (instanceId: string) => void
@@ -32,7 +26,6 @@ type DropColumnProps = {
 
 export function DropColumn({
   id,
-  label,
   terms,
   activeId,
   onToggleSign,
@@ -42,9 +35,6 @@ export function DropColumn({
   const { isOver, setNodeRef } = useDroppable({
     id: DROP_ZONE_ID[id],
   })
-
-  const alignmentClass = id === "left" ? "justify-end" : "justify-start"
-  const textAlignClass = id === "left" ? "text-right" : "text-left"
 
   const hasTerms = terms.length > 0
   const allPositionCorrect = hasTerms ? terms.every(isTermPositionCorrect) : false
@@ -68,20 +58,11 @@ export function DropColumn({
   )
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </span>
-        <span className="text-xs font-semibold text-muted-foreground">
-          カード {terms.length} 枚
-        </span>
-      </div>
+    <div className="flex w-full flex-col items-center gap-2">
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-[140px] flex-wrap items-center gap-3 rounded-xl border-2 border-dashed border-border bg-background/80 p-4 transition-colors",
-          alignmentClass,
+          "flex min-h-[140px] w-full flex-wrap items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-background/80 p-4 transition-colors",
           zoneStatusClass || "",
           isOver && "border-primary bg-primary/10"
         )}
@@ -110,22 +91,12 @@ export function DropColumn({
           )
         })}
         {!terms.length && (
-          <div
-            className={cn(
-              "flex grow items-center text-sm text-muted-foreground",
-              alignmentClass === "justify-end" ? "justify-end text-right" : "justify-start text-left"
-            )}
-          >
+          <div className="text-sm text-muted-foreground">
             ここにカードをドロップ
           </div>
         )}
       </div>
-      <p
-        className={cn("text-sm text-muted-foreground", textAlignClass)}
-        aria-label={expression}
-      >
-        <MathJax inline dynamic>{`\(${expressionTeX}\)`}</MathJax>
-      </p>
+      <MathJax inline dynamic>{"\\(" + expressionTeX + "\\)"}</MathJax>
     </div>
   )
 }

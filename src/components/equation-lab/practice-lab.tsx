@@ -43,14 +43,30 @@ import {
   type DragData,
   type EquationState,
   type HistoryEntry,
+  type KeypadField,
   type PlacedTerm,
   type TermLabelSettingsState,
   type TermLabels,
 } from "./types"
 import { DropColumn } from "./drop-column"
-import { SourceShelf } from "./source-shelf"
+import { SourceZone } from "./source-zone"
 import { DragPreview } from "./term-card"
 import { TermLabelSettingsPopover } from "./settings-popover"
+import { EquationRow } from "./equation-row"
+import { CoefficientEntry } from "./coefficient-entry"
+import { EquationInput } from "./equation-input"
+import { Keypad } from "./keypad"
+
+const parseInteger = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (trimmed === "-") return null
+  const parsed = Number(trimmed)
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+    return null
+  }
+  return parsed
+}
 
 export default function PracticeLab() {
   const [state, setState] = useState<EquationState | null>(null)
@@ -65,6 +81,11 @@ export default function PracticeLab() {
   const [termLabelSettings, setTermLabelSettings] = useState<TermLabelSettingsState>(
     defaultTermLabelSettings
   )
+  const [stage, setStage] = useState(1)
+  const [coefficientInput, setCoefficientInput] = useState("")
+  const [constantInput, setConstantInput] = useState("")
+  const [solutionInput, setSolutionInput] = useState("")
+  const [activeKeypadField, setActiveKeypadField] = useState<KeypadField | null>(null)
   const lastSolvedEquationId = useRef<string | null>(null)
 
   const equation = state?.equation ?? null
@@ -77,6 +98,15 @@ export default function PracticeLab() {
     useSensor(TouchSensor, {
       activationConstraint: { delay: 75, tolerance: 8 },
     })
+  )
+
+  const sourceLeftTerms = useMemo(
+    () => sourceTerms.filter((term) => term.side === "left"),
+    [sourceTerms]
+  )
+  const sourceRightTerms = useMemo(
+    () => sourceTerms.filter((term) => term.side === "right"),
+    [sourceTerms]
   )
 
   useEffect(() => {
@@ -136,6 +166,15 @@ export default function PracticeLab() {
     [placedTerms]
   )
 
+  const leftCoefficient = useMemo(
+    () => leftPlaced.reduce((sum, term) => sum + getPlacedCoeff(term), 0),
+    [leftPlaced]
+  )
+  const rightConstant = useMemo(
+    () => rightPlaced.reduce((sum, term) => sum + getPlacedCoeff(term), 0),
+    [rightPlaced]
+  )
+
   const leftExpression = useMemo(
     () =>
       formatExpressionText(
@@ -193,6 +232,52 @@ export default function PracticeLab() {
     [equation]
   )
 
+  const coefficientValue = parseInteger(coefficientInput)
+  const constantValue = parseInteger(constantInput)
+  const solutionValue = parseInteger(solutionInput)
+
+  const coefficientMatches =
+    stage >= 2 && coefficientValue !== null && coefficientValue === leftCoefficient
+  const constantMatches =
+    stage >= 2 && constantValue !== null && constantValue === rightConstant
+  const solutionMatches =
+    stage >= 3 && solutionValue !== null && equation
+      ? solutionValue === equation.solution
+      : false
+
+  const equationInline = useMemo(
+    () => (equation ? "\\(" + equationTeX + "\\)" : ""),
+    [equation, equationTeX]
+  )
+
+  const divisionExpression = useMemo(() => {
+    if (!equation) return ""
+    if (leftCoefficient === 0) {
+      return "x = \\text{未定義}"
+    }
+    return `x = \\dfrac{${rightConstant}}{${leftCoefficient}}`
+  }, [equation, leftCoefficient, rightConstant])
+
+  const fieldLabelMap: Record<KeypadField, string> = {
+    coefficient: "左辺の合計係数",
+    constant: "右辺の合計定数",
+    solution: "x の値",
+  }
+
+  const activeFieldLabel = useMemo(() => {
+    if (stage < 2) {
+      return "カードを揃えてから入力できます"
+    }
+
+    if (!activeKeypadField) {
+      return stage >= 4
+        ? "すべての入力が完了しました"
+        : "入力欄をタップして選択してください"
+    }
+
+    return `${fieldLabelMap[activeKeypadField]} を入力中`
+  }, [stage, activeKeypadField])
+
   const solved = useMemo(
     () => (equation ? isSolved(placedTerms, equation) : false),
     [placedTerms, equation]
@@ -247,6 +332,11 @@ export default function PracticeLab() {
     setMoveCount(0)
     setHighlightEquation(true)
     setActiveId(null)
+    setStage(1)
+    setCoefficientInput("")
+    setConstantInput("")
+    setSolutionInput("")
+    setActiveKeypadField(null)
     lastSolvedEquationId.current = null
   }, [])
 
@@ -290,6 +380,68 @@ export default function PracticeLab() {
       ]
     })
   }, [equation, leftExpression, leftExpressionTeX, placedTerms, rightExpression, rightExpressionTeX])
+
+  useEffect(() => {
+    if (solved) {
+      setStage((prev) => Math.max(prev, 2))
+    }
+  }, [solved])
+
+  useEffect(() => {
+    if (stage >= 2 && coefficientMatches && constantMatches) {
+      setStage((prev) => Math.max(prev, 3))
+    }
+  }, [stage, coefficientMatches, constantMatches])
+
+  useEffect(() => {
+    if (stage >= 3 && solutionMatches) {
+      setStage((prev) => Math.max(prev, 4))
+    }
+  }, [stage, solutionMatches])
+
+  useEffect(() => {
+    if (stage === 1) {
+      if (activeKeypadField !== null) {
+        setActiveKeypadField(null)
+      }
+      return
+    }
+
+    if (stage === 2) {
+      if (!coefficientMatches) {
+        if (activeKeypadField !== "coefficient") {
+          setActiveKeypadField("coefficient")
+        }
+        return
+      }
+      if (!constantMatches) {
+        if (activeKeypadField !== "constant") {
+          setActiveKeypadField("constant")
+        }
+        return
+      }
+      if (activeKeypadField !== null) {
+        setActiveKeypadField(null)
+      }
+      return
+    }
+
+    if (stage >= 3) {
+      if (!solutionMatches) {
+        if (activeKeypadField !== "solution") {
+          setActiveKeypadField("solution")
+        }
+      } else if (activeKeypadField !== null) {
+        setActiveKeypadField(null)
+      }
+    }
+  }, [
+    stage,
+    activeKeypadField,
+    coefficientMatches,
+    constantMatches,
+    solutionMatches,
+  ])
 
   useEffect(() => {
     if (!equation || !solved || lastSolvedEquationId.current === equation.id) {
@@ -412,6 +564,11 @@ export default function PracticeLab() {
   const clearPlacedTerms = useCallback(() => {
     setPlacedTerms([])
     setMoveCount(0)
+    setStage(1)
+    setCoefficientInput("")
+    setConstantInput("")
+    setSolutionInput("")
+    setActiveKeypadField(null)
   }, [])
 
   const toggleTermSign = useCallback((instanceId: string) => {
@@ -424,6 +581,72 @@ export default function PracticeLab() {
     )
     setMoveCount((count) => count + 1)
   }, [])
+
+  const sanitizeInputValue = (value: string) => {
+    if (!value) return ""
+    if (value === "-") return "-"
+    const negative = value.startsWith("-")
+    let digits = negative ? value.slice(1) : value
+    digits = digits.replace(/[^0-9]/g, "")
+    if (!digits) {
+      return negative ? "-" : ""
+    }
+    digits = digits.replace(/^0+(?=\d)/, "")
+    if (digits === "") digits = "0"
+    return negative ? `-${digits}` : digits
+  }
+
+  const setFieldValue = (field: KeypadField, updater: (prev: string) => string) => {
+    const apply = (prev: string) => sanitizeInputValue(updater(prev))
+    switch (field) {
+      case "coefficient":
+        setCoefficientInput(apply)
+        break
+      case "constant":
+        setConstantInput(apply)
+        break
+      case "solution":
+        setSolutionInput(apply)
+        break
+    }
+  }
+
+  const handleDigit = (digit: string) => {
+    if (!activeKeypadField) return
+    setFieldValue(activeKeypadField, (prev) => {
+      if (prev === "-" || prev === "") {
+        return prev + digit
+      }
+      if (prev === "0") {
+        return digit
+      }
+      if (prev === "-0") {
+        return `-${digit}`
+      }
+      return prev + digit
+    })
+  }
+
+  const handleBackspace = () => {
+    if (!activeKeypadField) return
+    setFieldValue(activeKeypadField, (prev) => prev.slice(0, -1))
+  }
+
+  const handleClearField = () => {
+    if (!activeKeypadField) return
+    setFieldValue(activeKeypadField, () => "")
+  }
+
+  const handleToggleSign = () => {
+    if (!activeKeypadField) return
+    setFieldValue(activeKeypadField, (prev) => {
+      if (!prev) return "-"
+      if (prev === "-") return ""
+      return prev.startsWith("-") ? prev.slice(1) : `-${prev}`
+    })
+  }
+
+  const keypadDisabled = stage < 2 || activeKeypadField === null
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-4 py-10 md:px-8">
@@ -453,7 +676,7 @@ export default function PracticeLab() {
                 aria-label={equationText}
               >
                 {equation ? (
-                  <MathJax inline dynamic>{`\(${equationTeX}\)`}</MathJax>
+                  <MathJax inline dynamic>{equationInline}</MathJax>
                 ) : (
                   equationText
                 )}
@@ -476,38 +699,107 @@ export default function PracticeLab() {
               onDragCancel={handleDragCancel}
             >
               <div className="space-y-6">
-                <SourceShelf
-                  terms={sourceTerms}
-                  labels={resolvedLabels}
-                  showHelper={termLabelSettings.showHelper}
-                  activeId={activeId}
+                <EquationRow
+                  leftLabel="左辺"
+                  rightLabel="右辺"
+                  left={
+                    <SourceZone
+                      side="left"
+                      terms={sourceLeftTerms}
+                      labels={resolvedLabels}
+                      showHelper={termLabelSettings.showHelper}
+                      activeId={activeId}
+                    />
+                  }
+                  right={
+                    <SourceZone
+                      side="right"
+                      terms={sourceRightTerms}
+                      labels={resolvedLabels}
+                      showHelper={termLabelSettings.showHelper}
+                      activeId={activeId}
+                    />
+                  }
                 />
 
-                <div className="grid items-start gap-6 md:grid-cols-[1fr_auto_1fr]">
-                  <DropColumn
-                    id="left"
-                    label="左辺"
-                    terms={leftPlaced}
-                    onToggleSign={toggleTermSign}
-                    labels={resolvedLabels}
-                    showHelper={termLabelSettings.showHelper}
-                    activeId={activeId}
+                <EquationRow
+                  leftLabel="左辺"
+                  rightLabel="右辺"
+                  left={
+                    <DropColumn
+                      id="left"
+                      terms={leftPlaced}
+                      onToggleSign={toggleTermSign}
+                      labels={resolvedLabels}
+                      showHelper={termLabelSettings.showHelper}
+                      activeId={activeId}
+                    />
+                  }
+                  right={
+                    <DropColumn
+                      id="right"
+                      terms={rightPlaced}
+                      onToggleSign={toggleTermSign}
+                      labels={resolvedLabels}
+                      showHelper={termLabelSettings.showHelper}
+                      activeId={activeId}
+                    />
+                  }
+                />
+                {stage >= 2 && (
+                  <EquationRow
+                    leftLabel="左辺"
+                    rightLabel="右辺"
+                    left={
+                      <CoefficientEntry
+                        label="左辺の合計係数"
+                        value={coefficientInput}
+                        expected={leftCoefficient}
+                        stage={stage}
+                        field="coefficient"
+                        activeField={activeKeypadField}
+                        onFocus={setActiveKeypadField}
+                        matches={coefficientMatches}
+                      />
+                    }
+                    right={
+                      <CoefficientEntry
+                        label="右辺の合計定数"
+                        value={constantInput}
+                        expected={rightConstant}
+                        stage={stage}
+                        field="constant"
+                        activeField={activeKeypadField}
+                        onFocus={setActiveKeypadField}
+                        matches={constantMatches}
+                      />
+                    }
                   />
-
-                  <div className="flex h-full items-center justify-center text-4xl font-semibold text-muted-foreground md:text-5xl">
-                    =
-                  </div>
-
-                  <DropColumn
-                    id="right"
-                    label="右辺"
-                    terms={rightPlaced}
-                    onToggleSign={toggleTermSign}
-                    labels={resolvedLabels}
-                    showHelper={termLabelSettings.showHelper}
-                    activeId={activeId}
+                )}
+                {stage >= 3 && equation && (
+                  <EquationRow
+                    leftLabel="左辺"
+                    rightLabel="右辺"
+                    left={
+                      <EquationInput
+                        label="移項後の式"
+                        expression={divisionExpression}
+                      />
+                    }
+                    right={
+                      <CoefficientEntry
+                        label="x の値"
+                        value={solutionInput}
+                        expected={equation.solution}
+                        stage={stage}
+                        field="solution"
+                        activeField={activeKeypadField}
+                        onFocus={setActiveKeypadField}
+                        matches={solutionMatches}
+                      />
+                    }
                   />
-                </div>
+                )}
               </div>
               <DragOverlay dropAnimation={null}>
                 {activeDrag ? (
@@ -556,7 +848,9 @@ export default function PracticeLab() {
                   {equation
                     ? solved
                       ? (
-                          <MathJax inline dynamic>{`\(x = ${equation.solution}\)`}</MathJax>
+                          <MathJax inline dynamic>
+                            {"\\(x = " + equation.solution + "\\)"}
+                          </MathJax>
                         )
                       : "カードを並べ替えてみましょう"
                     : "最初の問題を準備しています..."}
@@ -582,13 +876,34 @@ export default function PracticeLab() {
                     <div className="mb-1 flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
                       <span>ステップ {index + 1}</span>
                     </div>
-                    <MathJax dynamic>{`\(${entry.tex}\)`}</MathJax>
+                <MathJax dynamic>{`\(${entry.tex}\)`}</MathJax>
                   </li>
                 ))}
               </ol>
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>テンキー入力</CardTitle>
+            <CardDescription>
+              選択した項の値をテンキーで入力します。
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">
+              {activeFieldLabel}
+            </p>
+            <Keypad
+              disabled={keypadDisabled}
+              onDigit={handleDigit}
+              onBackspace={handleBackspace}
+              onClear={handleClearField}
+              onToggleSign={handleToggleSign}
+            />
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
