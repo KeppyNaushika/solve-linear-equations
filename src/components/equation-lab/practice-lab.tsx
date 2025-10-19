@@ -11,7 +11,6 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core"
-import { restrictToPointerPosition } from "@dnd-kit/modifiers"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -475,7 +474,6 @@ export default function PracticeLab() {
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               onDragCancel={handleDragCancel}
-              modifiers={[restrictToPointerPosition]}
             >
               <div className="space-y-6">
                 <SourceShelf

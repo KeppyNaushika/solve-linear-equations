@@ -87,8 +87,6 @@ export function TermCard({
         statusClass,
         (isDragging || isActive) && "cursor-grabbing border-primary bg-primary/15 shadow-md"
       )}
-      tabIndex={0}
-      role="button"
       aria-label={ariaLabel}
       data-side={side}
       data-type={isSource ? "source" : "placed"}

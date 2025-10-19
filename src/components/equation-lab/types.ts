@@ -52,12 +52,3 @@ export type DragData =
       type: "placed"
       term: PlacedTerm
     }
-
-export type LinearEquation = {
-  id: string
-  leftVariable: number
-  leftConstant: number
-  rightVariable: number
-  rightConstant: number
-  solution: number
-}
