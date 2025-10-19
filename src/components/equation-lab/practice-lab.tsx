@@ -21,7 +21,7 @@ import { TermLabelSettingsPopover } from "./settings-popover"
 import { EquationRow } from "./equation-row"
 import { CoefficientEntry } from "./coefficient-entry"
 import { EquationInput } from "./equation-input"
-import { Keypad } from "./keypad"
+import type { KeypadField } from "./types"
 import { usePracticeLab } from "./use-practice-lab"
 
 export default function PracticeLab() {
@@ -46,13 +46,16 @@ export default function PracticeLab() {
     stage,
     coefficientInput,
     constantInput,
+    divisionInput,
     solutionInput,
     activeKeypadField,
     focusKeypadField,
     coefficientMatches,
     constantMatches,
+    divisionMatches,
     solutionMatches,
     divisionExpression,
+    finalExpression,
     activeDrag,
     hint,
     moveCount,
@@ -63,25 +66,59 @@ export default function PracticeLab() {
     loadNextEquation,
     clearPlacedTerms,
     togglePracticeMode,
-    activeFieldLabel,
-    keypadDisabled,
+    handleInputChange,
     handleDigit,
     handleBackspace,
     handleClearField,
     handleToggleSign,
   } = usePracticeLab()
 
+  const fieldStageMap: Record<KeypadField, number> = {
+    coefficient: 2,
+    constant: 2,
+    division: 3,
+    solution: 4,
+  }
+
+  const getFieldState = (
+    field: KeypadField,
+    matches: boolean
+  ): { editable: boolean; dimmed: boolean; showKeypad: boolean } => {
+    const targetStage = fieldStageMap[field]
+    const isBeforeStage = stage < targetStage
+    const isAfterStage = stage > targetStage
+    const isCurrentStage = stage === targetStage
+    const editable =
+      isCurrentStage && !matches && activeKeypadField === field
+    const dimmed =
+      isBeforeStage ||
+      isAfterStage ||
+      matches ||
+      (isCurrentStage && !editable)
+    return {
+      editable,
+      dimmed,
+      showKeypad: editable,
+    }
+  }
+
+  const coefficientState = getFieldState("coefficient", coefficientMatches)
+  const constantState = getFieldState("constant", constantMatches)
+  const divisionState = getFieldState("division", divisionMatches)
+  const solutionState = getFieldState("solution", solutionMatches)
+
+  const sourceRowDimmed = stage > 1
+  const dropRowDimmed = stage > 1
+  const coefficientRowDimmed = stage !== 2
+  const divisionRowDimmed = stage !== 3
+  const solutionRowDimmed = stage !== 4 || solutionMatches
+
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-4 py-10 md:px-8">
       <header className="space-y-3">
         <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-          一次方程式ラボ
+          一次方程式を解こう！
         </h1>
-        <p className="max-w-3xl text-base text-muted-foreground md:text-lg">
-          方程式のカードをドラッグ＆ドロップして <span className="font-semibold">x</span> を孤立させましょう。
-          等号をまたいだカードは右上のボタンで符号を調整し、枠の色が緑になるまで仕上げてください。
-          1 題だけ解いても、連続で挑戦してもかまいません。
-        </p>
       </header>
 
       <Card
@@ -125,6 +162,7 @@ export default function PracticeLab() {
                 <EquationRow
                   leftLabel="左辺"
                   rightLabel="右辺"
+                  dimmed={sourceRowDimmed}
                   left={
                     <SourceZone
                       side="left"
@@ -146,8 +184,7 @@ export default function PracticeLab() {
                 />
 
                 <EquationRow
-                  leftLabel="左辺"
-                  rightLabel="右辺"
+                  dimmed={dropRowDimmed}
                   left={
                     <DropColumn
                       id="left"
@@ -156,6 +193,7 @@ export default function PracticeLab() {
                       labels={resolvedLabels}
                       showHelper={termLabelSettings.showHelper}
                       activeId={activeId}
+                      stage={stage}
                     />
                   }
                   right={
@@ -166,22 +204,32 @@ export default function PracticeLab() {
                       labels={resolvedLabels}
                       showHelper={termLabelSettings.showHelper}
                       activeId={activeId}
+                      stage={stage}
                     />
                   }
                 />
                 {stage >= 2 && (
                   <EquationRow
-                    leftLabel="左辺"
-                    rightLabel="右辺"
+                    dimmed={coefficientRowDimmed}
                     left={
                       <CoefficientEntry
-                        label="左辺の合計係数"
+                        ariaLabel="左辺の合計係数"
                         value={coefficientInput}
                         stage={stage}
                         field="coefficient"
                         activeField={activeKeypadField}
                         onFocus={focusKeypadField}
+                        onInputChange={handleInputChange}
                         matches={coefficientMatches}
+                        dimmed={coefficientState.dimmed}
+                        editable={coefficientState.editable}
+                        showKeypad={coefficientState.showKeypad}
+                        layout="inline"
+                        adornment="x"
+                        onDigit={handleDigit}
+                        onBackspace={handleBackspace}
+                        onClear={handleClearField}
+                        onToggleSign={handleToggleSign}
                       />
                     }
                     right={
@@ -192,19 +240,56 @@ export default function PracticeLab() {
                         field="constant"
                         activeField={activeKeypadField}
                         onFocus={focusKeypadField}
+                        onInputChange={handleInputChange}
                         matches={constantMatches}
+                        dimmed={constantState.dimmed}
+                        editable={constantState.editable}
+                        showKeypad={constantState.showKeypad}
+                        onDigit={handleDigit}
+                        onBackspace={handleBackspace}
+                        onClear={handleClearField}
+                        onToggleSign={handleToggleSign}
                       />
                     }
                   />
                 )}
                 {stage >= 3 && equation && (
                   <EquationRow
-                    leftLabel="左辺"
-                    rightLabel="右辺"
+                    dimmed={divisionRowDimmed}
                     left={
                       <EquationInput
                         label="移項後の式"
                         expression={divisionExpression}
+                      />
+                    }
+                    right={
+                      <CoefficientEntry
+                        label="割り算の結果"
+                        value={divisionInput}
+                        stage={stage}
+                        field="division"
+                        activeField={activeKeypadField}
+                        onFocus={focusKeypadField}
+                        onInputChange={handleInputChange}
+                        matches={divisionMatches}
+                        dimmed={divisionState.dimmed}
+                        editable={divisionState.editable}
+                        showKeypad={divisionState.showKeypad}
+                        onDigit={handleDigit}
+                        onBackspace={handleBackspace}
+                        onClear={handleClearField}
+                        onToggleSign={handleToggleSign}
+                      />
+                    }
+                  />
+                )}
+                {stage >= 4 && equation && (
+                  <EquationRow
+                    dimmed={solutionRowDimmed}
+                    left={
+                      <EquationInput
+                        label="最終結果"
+                        expression={finalExpression}
                       />
                     }
                     right={
@@ -215,7 +300,15 @@ export default function PracticeLab() {
                         field="solution"
                         activeField={activeKeypadField}
                         onFocus={focusKeypadField}
+                        onInputChange={handleInputChange}
                         matches={solutionMatches}
+                        dimmed={solutionState.dimmed}
+                        editable={solutionState.editable}
+                        showKeypad={solutionState.showKeypad}
+                        onDigit={handleDigit}
+                        onBackspace={handleBackspace}
+                        onClear={handleClearField}
+                        onToggleSign={handleToggleSign}
                       />
                     }
                   />
@@ -233,14 +326,14 @@ export default function PracticeLab() {
             </DndContext>
           ) : (
             <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 px-4 py-16 text-sm text-muted-foreground">
-              最初の方程式を準備中です...
+              問題を準備中です...
             </div>
           )}
 
           <div className="flex flex-col gap-3 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-4 py-3 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
             <span>{hint}</span>
             <span className="font-medium text-foreground">
-              この問題での移動回数: {moveCount}
+              この問題でカードを動かした回数: {moveCount}
             </span>
           </div>
         </CardContent>
@@ -252,18 +345,18 @@ export default function PracticeLab() {
             <CardHeader>
               <CardTitle>練習記録</CardTitle>
               <CardDescription>
-                解いた回数と現在の途中式を振り返りましょう。
+                ここで回数と途中式を確認します。
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                解いた方程式の合計:{" "}
+                解いた問題の数:{" "}
                 <span className="text-base font-semibold text-foreground">
                   {solvedCount}
                 </span>
               </p>
               <p className="text-sm text-muted-foreground">
-                現在の解のプレビュー:{" "}
+                いまの答えのようす:{" "}
                 <span className="text-base font-semibold text-foreground">
                   {equation
                     ? solved
@@ -272,79 +365,35 @@ export default function PracticeLab() {
                             {"\\(x = " + equation.solution + "\\)"}
                           </MathJax>
                         )
-                      : "カードを並べ替えてみましょう"
-                    : "最初の問題を準備しています..."}
+                      : "カードを動かしてみよう"
+                    : "最初の問題を準備中です..."}
                 </span>
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>途中式の履歴</CardTitle>
-              <CardDescription>
-                上段から作成した途中式が順番に記録されます。
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ol className="space-y-3">
-                {history.map((entry, index) => (
-                  <li
-                    key={entry.id}
-                    className="rounded-lg border bg-background/60 px-3 py-2 text-sm text-foreground"
-                  >
-                    <div className="mb-1 flex items-center justify-between text-xs font-medium uppercase text-muted-foreground">
-                      <span>ステップ {index + 1}</span>
-                    </div>
-                    <MathJax dynamic>{"\\(" + entry.tex + "\\)"}</MathJax>
-                  </li>
-                ))}
-              </ol>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>テンキー入力</CardTitle>
+              <CardTitle>そのほか</CardTitle>
               <CardDescription>
-                選択した項の値をテンキーで入力します。
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground text-center">
-                {activeFieldLabel}
-              </p>
-              <Keypad
-                disabled={keypadDisabled}
-                onDigit={handleDigit}
-                onBackspace={handleBackspace}
-                onClear={handleClearField}
-                onToggleSign={handleToggleSign}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>セッション操作</CardTitle>
-              <CardDescription>
-                休憩するか次の問題を準備しましょう。
+                休むか次の問題に進みます。
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <Button onClick={loadNextEquation} variant="default">
-                新しい問題を配る
+                次の問題
               </Button>
               <Button onClick={clearPlacedTerms} variant="outline">
-                途中式をクリアする
+                途中式を消す
               </Button>
               <Button
                 onClick={togglePracticeMode}
                 variant={keepPracticing ? "outline" : "secondary"}
               >
-                {keepPracticing ? "今回で終了する" : "自動で次へ進む"}
+                {keepPracticing ? "自動つづけを止める" : "自動でつづける"}
               </Button>
             </CardContent>
           </Card>

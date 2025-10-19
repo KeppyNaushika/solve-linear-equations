@@ -12,7 +12,6 @@ import {
   isTermSignCorrect,
   formatCardText,
   formatExpressionTeX,
-  formatExpressionText,
 } from "./utils"
 import { DROP_ZONE_ID } from "./constants"
 import { TermCard } from "./term-card"
@@ -24,6 +23,7 @@ type DropColumnProps = {
   onToggleSign: (instanceId: string) => void
   labels: TermLabels
   showHelper: boolean
+  stage: number
 }
 
 export function DropColumn({
@@ -33,6 +33,7 @@ export function DropColumn({
   onToggleSign,
   labels,
   showHelper,
+  stage,
 }: DropColumnProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: DROP_ZONE_ID[id],
@@ -51,54 +52,63 @@ export function DropColumn({
         : "border-amber-500/70 bg-amber-500/10"
       : "border-destructive/60 bg-destructive/10"
 
-  const expression = formatExpressionText(
-    terms.map((term) => ({ coeff: getPlacedCoeff(term), isVariable: term.isVariable }))
-  )
-
   const expressionTeX = formatExpressionTeX(
     terms.map((term) => ({ coeff: getPlacedCoeff(term), isVariable: term.isVariable }))
   )
+
+  const showExpressionOnly = stage >= 2
 
   return (
     <div className="flex w-full flex-col items-center gap-2">
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-[140px] w-full flex-wrap items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-background/80 p-4 transition-colors",
-          zoneStatusClass || "",
-          isOver && "border-primary bg-primary/10"
+          "flex min-h-[140px] w-full flex-wrap items-center justify-center gap-3 rounded-xl p-4 transition-colors",
+          showExpressionOnly
+            ? "border border-border bg-background/80"
+            : "border-2 border-dashed border-border bg-background/80",
+          !showExpressionOnly && zoneStatusClass,
+          !showExpressionOnly && isOver && "border-primary bg-primary/10"
         )}
       >
-        {terms.map((term) => {
-          const positionOk = isTermPositionCorrect(term)
-          const signOk = positionOk && isTermSignCorrect(term)
-          const cardLabel = formatCardText(getPlacedCoeff(term), term.isVariable)
-          return (
-            <TermCard
-              key={term.instanceId}
-              id={term.instanceId}
-              dragType="placed"
-              coeff={getPlacedCoeff(term)}
-              isVariable={term.isVariable}
-              side={term.side}
-              activeId={activeId}
-              ariaLabel={`途中式の項カード ${cardLabel}`}
-              data={{ type: "placed", term } as DragData}
-              onToggleSign={onToggleSign}
-              isPositionCorrect={positionOk}
-              isSignCorrect={signOk}
-              labels={labels}
-              showHelper={showHelper}
-            />
-          )
-        })}
-        {!terms.length && (
-          <div className="text-sm text-muted-foreground">
-            ここにカードをドロップ
-          </div>
+        {showExpressionOnly ? (
+          <MathJax inline dynamic>{"\\(" + expressionTeX + "\\)"}</MathJax>
+        ) : (
+          <>
+            {terms.map((term) => {
+              const positionOk = isTermPositionCorrect(term)
+              const signOk = positionOk && isTermSignCorrect(term)
+              const cardLabel = formatCardText(getPlacedCoeff(term), term.isVariable)
+              return (
+                <TermCard
+                  key={term.instanceId}
+                  id={term.instanceId}
+                  dragType="placed"
+                  coeff={getPlacedCoeff(term)}
+                  isVariable={term.isVariable}
+                  side={term.side}
+                  activeId={activeId}
+                  ariaLabel={`途中式の項カード ${cardLabel}`}
+                  data={{ type: "placed", term } as DragData}
+                  onToggleSign={onToggleSign}
+                  isPositionCorrect={positionOk}
+                  isSignCorrect={signOk}
+                  labels={labels}
+                  showHelper={showHelper}
+                />
+              )
+            })}
+            {!terms.length && (
+              <div className="text-sm text-muted-foreground">
+                ここにカードをドロップ
+              </div>
+            )}
+          </>
         )}
       </div>
-      <MathJax inline dynamic>{"\\(" + expressionTeX + "\\)"}</MathJax>
+      {!showExpressionOnly && (
+        <MathJax inline dynamic>{"\\(" + expressionTeX + "\\)"}</MathJax>
+      )}
     </div>
   )
 }

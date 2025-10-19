@@ -51,7 +51,7 @@ export function TermLabelSettingsPopover({
           <Settings2 className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="space-y-4">
+      <PopoverContent align="end" className="space-y-4 bg-background">
         <div className="space-y-1">
           <h3 className="text-sm font-semibold text-foreground">ラベル設定</h3>
           <p className="text-xs text-muted-foreground">

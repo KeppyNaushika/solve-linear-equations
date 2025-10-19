@@ -6,6 +6,7 @@ type EquationRowProps = {
   left: React.ReactNode
   right: React.ReactNode
   className?: string
+  dimmed?: boolean
 }
 
 export function EquationRow({
@@ -14,16 +15,18 @@ export function EquationRow({
   left,
   right,
   className,
+  dimmed,
 }: EquationRowProps) {
   return (
     <div
       className={cn(
-        "grid gap-6 md:grid-cols-[1fr_auto_1fr] items-start",
+        "grid gap-6 md:grid-cols-[1fr_auto_1fr] items-stretch transition-opacity",
+        dimmed && "opacity-40",
         className
       )}
     >
       <Column label={leftLabel}>{left}</Column>
-      <div className="flex h-full items-center justify-center text-4xl font-semibold text-muted-foreground md:text-5xl">
+      <div className="flex h-full items-center justify-center self-stretch text-4xl font-semibold text-muted-foreground md:text-5xl">
         =
       </div>
       <Column label={rightLabel}>{right}</Column>

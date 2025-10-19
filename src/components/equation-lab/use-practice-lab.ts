@@ -31,12 +31,6 @@ import {
   type TermLabels,
 } from "./types"
 
-const FIELD_LABEL_MAP: Record<KeypadField, string> = {
-  coefficient: "左辺の合計係数",
-  constant: "右辺の合計定数",
-  solution: "x の値",
-}
-
 const parseInteger = (value: string) => {
   const trimmed = value.trim()
   if (!trimmed) return null
@@ -64,6 +58,7 @@ export function usePracticeLab() {
   const [stage, setStage] = useState(1)
   const [coefficientInput, setCoefficientInput] = useState("")
   const [constantInput, setConstantInput] = useState("")
+  const [divisionInput, setDivisionInput] = useState("")
   const [solutionInput, setSolutionInput] = useState("")
   const [activeKeypadField, setActiveKeypadField] = useState<KeypadField | null>(null)
   const lastSolvedEquationId = useRef<string | null>(null)
@@ -214,6 +209,7 @@ export function usePracticeLab() {
 
   const coefficientValue = parseInteger(coefficientInput)
   const constantValue = parseInteger(constantInput)
+  const divisionValue = parseInteger(divisionInput)
   const solutionValue = parseInteger(solutionInput)
 
   const leftExpressionForHistory = leftExpression
@@ -223,8 +219,12 @@ export function usePracticeLab() {
     stage >= 2 && coefficientValue !== null && coefficientValue === leftCoefficient
   const constantMatches =
     stage >= 2 && constantValue !== null && constantValue === rightConstant
+  const divisionMatches =
+    stage >= 3 && divisionValue !== null && equation
+      ? divisionValue === equation.solution
+      : false
   const solutionMatches =
-    stage >= 3 && solutionValue !== null && equation
+    stage >= 4 && solutionValue !== null && equation
       ? solutionValue === equation.solution
       : false
 
@@ -241,19 +241,13 @@ export function usePracticeLab() {
     return `x = \\dfrac{${rightConstant}}{${leftCoefficient}}`
   }, [equation, leftCoefficient, rightConstant])
 
-  const activeFieldLabel = useMemo(() => {
-    if (stage < 2) {
-      return "カードを揃えてから入力できます"
+  const finalExpression = useMemo(() => {
+    if (!equation) return ""
+    if (!divisionMatches) {
+      return "x = \\square"
     }
-
-    if (!activeKeypadField) {
-      return stage >= 4
-        ? "すべての入力が完了しました"
-        : "入力欄をタップして選択してください"
-    }
-
-    return `${FIELD_LABEL_MAP[activeKeypadField]} を入力中`
-  }, [stage, activeKeypadField])
+    return `x = ${equation.solution}`
+  }, [divisionMatches, equation])
 
   const solved = useMemo(
     () => (equation ? isSolved(placedTerms, equation) : false),
@@ -312,6 +306,7 @@ export function usePracticeLab() {
     setStage(1)
     setCoefficientInput("")
     setConstantInput("")
+    setDivisionInput("")
     setSolutionInput("")
     setActiveKeypadField(null)
     lastSolvedEquationId.current = null
@@ -378,10 +373,10 @@ export function usePracticeLab() {
   }, [stage, coefficientMatches, constantMatches])
 
   useEffect(() => {
-    if (stage >= 3 && solutionMatches) {
+    if (stage >= 3 && divisionMatches) {
       setStage((prev) => Math.max(prev, 4))
     }
-  }, [stage, solutionMatches])
+  }, [stage, divisionMatches])
 
   useEffect(() => {
     if (stage === 1) {
@@ -410,7 +405,18 @@ export function usePracticeLab() {
       return
     }
 
-    if (stage >= 3) {
+    if (stage === 3) {
+      if (!divisionMatches) {
+        if (activeKeypadField !== "division") {
+          setActiveKeypadField("division")
+        }
+      } else if (activeKeypadField !== null) {
+        setActiveKeypadField(null)
+      }
+      return
+    }
+
+    if (stage >= 4) {
       if (!solutionMatches) {
         if (activeKeypadField !== "solution") {
           setActiveKeypadField("solution")
@@ -424,11 +430,17 @@ export function usePracticeLab() {
     activeKeypadField,
     coefficientMatches,
     constantMatches,
+    divisionMatches,
     solutionMatches,
   ])
 
   useEffect(() => {
-    if (!equation || !solved || lastSolvedEquationId.current === equation.id) {
+    if (
+      !equation ||
+      stage < 4 ||
+      !solutionMatches ||
+      lastSolvedEquationId.current === equation.id
+    ) {
       return
     }
 
@@ -449,7 +461,7 @@ export function usePracticeLab() {
 
       return () => window.clearTimeout(timeout)
     }
-  }, [equation, keepPracticing, loadNextEquation, solved])
+  }, [equation, keepPracticing, loadNextEquation, solutionMatches, stage])
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(String(event.active.id))
@@ -551,6 +563,7 @@ export function usePracticeLab() {
     setStage(1)
     setCoefficientInput("")
     setConstantInput("")
+    setDivisionInput("")
     setSolutionInput("")
     setActiveKeypadField(null)
   }, [])
@@ -588,6 +601,9 @@ export function usePracticeLab() {
         break
       case "constant":
         setConstantInput(apply)
+        break
+      case "division":
+        setDivisionInput(apply)
         break
       case "solution":
         setSolutionInput(apply)
@@ -634,7 +650,12 @@ export function usePracticeLab() {
     setActiveKeypadField(field)
   }, [])
 
-  const keypadDisabled = stage < 2 || activeKeypadField === null
+  const handleInputChange = useCallback(
+    (field: KeypadField, rawValue: string) => {
+      setFieldValue(field, () => rawValue)
+    },
+    []
+  )
 
   return {
     highlightEquation,
@@ -657,13 +678,16 @@ export function usePracticeLab() {
     stage,
     coefficientInput,
     constantInput,
+    divisionInput,
     solutionInput,
     activeKeypadField,
     focusKeypadField,
     coefficientMatches,
     constantMatches,
+    divisionMatches,
     solutionMatches,
     divisionExpression,
+    finalExpression,
     activeDrag,
     hint,
     moveCount,
@@ -674,8 +698,7 @@ export function usePracticeLab() {
     loadNextEquation,
     clearPlacedTerms,
     togglePracticeMode,
-    activeFieldLabel,
-    keypadDisabled,
+    handleInputChange,
     handleDigit,
     handleBackspace,
     handleClearField,
