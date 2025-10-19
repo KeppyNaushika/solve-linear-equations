@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, type Dispatch, type SetStateAction } from "react"
+import { useEffect, useMemo, useRef, type Dispatch, type SetStateAction } from "react"
 
 import {
   DndContext,
@@ -178,14 +178,25 @@ export function PracticeEquationCard({
   const divisionRowDimmed = stage !== 3
   const solutionRowDimmed = stage !== 4 || solutionMatches
 
-  const allPlacedTerms = [...leftPlaced, ...rightPlaced]
-  const placedSourceIds = new Set(allPlacedTerms.map((term) => term.sourceId))
-  const leftSourcesPlaced = sourceLeftTerms.every((source) =>
-    placedSourceIds.has(source.id)
-  )
-  const rightSourcesPlaced = sourceRightTerms.every((source) =>
-    placedSourceIds.has(source.id)
-  )
+  const leftSourcesPlaced = useMemo(() => {
+    // 左辺に配置すべき全てのカード（変数）が配置されているか
+    const allVariableSources = [...sourceLeftTerms, ...sourceRightTerms].filter(
+      (source) => source.isVariable
+    )
+    if (allVariableSources.length === 0) return true
+    const leftPlacedSourceIds = new Set(leftPlaced.map((term) => term.sourceId))
+    return allVariableSources.every((source) => leftPlacedSourceIds.has(source.id))
+  }, [leftPlaced, sourceLeftTerms, sourceRightTerms])
+
+  const rightSourcesPlaced = useMemo(() => {
+    // 右辺に配置すべき全てのカード（定数）が配置されているか
+    const allConstantSources = [...sourceLeftTerms, ...sourceRightTerms].filter(
+      (source) => !source.isVariable
+    )
+    if (allConstantSources.length === 0) return true
+    const rightPlacedSourceIds = new Set(rightPlaced.map((term) => term.sourceId))
+    return allConstantSources.every((source) => rightPlacedSourceIds.has(source.id))
+  }, [rightPlaced, sourceLeftTerms, sourceRightTerms])
 
   const renderKeypad = (
     fieldState: { editable: boolean; showKeypad: boolean },
