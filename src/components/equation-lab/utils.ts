@@ -25,12 +25,16 @@ export function createTerm(coeff: number, isVariable: boolean, side: Side): Sour
 export function buildTermsFromEquation(equation: EquationState["equation"]): SourceTerm[] {
   const terms: SourceTerm[] = []
 
-  terms.push(createTerm(equation.leftVariable, true, "left"))
+  if (equation.leftVariable !== 0) {
+    terms.push(createTerm(equation.leftVariable, true, "left"))
+  }
   if (equation.leftConstant !== 0) {
     terms.push(createTerm(equation.leftConstant, false, "left"))
   }
 
-  terms.push(createTerm(equation.rightVariable, true, "right"))
+  if (equation.rightVariable !== 0) {
+    terms.push(createTerm(equation.rightVariable, true, "right"))
+  }
   if (equation.rightConstant !== 0) {
     terms.push(createTerm(equation.rightConstant, false, "right"))
   }
@@ -154,9 +158,7 @@ export function getCardStatusClass(options: {
     showSignHint = true,
   } = options
   if (isSource) {
-    return isVariable
-      ? "bg-primary/5 border-primary/40"
-      : "bg-secondary/40 border-secondary/50"
+    return "bg-secondary/40 border-secondary/50"
   }
 
   if (!isPositionCorrect) {
