@@ -1,12 +1,10 @@
 "use client"
 
-import { useCallback, useState } from "react"
-import { Settings2 } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Switch } from "@/components/ui/switch"
-
+import { Settings2 } from "lucide-react"
+import { useCallback, useState } from "react"
 import type { TermLabelSettingsState } from "./types"
 
 type TermLabelSettingsPopoverProps = {

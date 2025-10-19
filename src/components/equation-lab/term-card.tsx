@@ -1,11 +1,8 @@
 "use client"
-import { useState } from "react"
-
+import { cn } from "@/lib/utils"
 import { useDraggable } from "@dnd-kit/core"
 import { MathJax } from "better-react-mathjax"
-
-import { cn } from "@/lib/utils"
-
+import { useState } from "react"
 import type { DragData, DragType, Side, TermLabels } from "./types"
 import {
   formatCardTeX,

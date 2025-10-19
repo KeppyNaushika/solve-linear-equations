@@ -1,17 +1,24 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { createId, formatEquation, formatEquationTeX } from "@/lib/equations"
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core"
 import { PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
-
-import { createId, formatEquation, formatEquationTeX } from "@/lib/equations"
-
 import {
   DEFAULT_TERM_LABELS,
   defaultTermLabelSettings,
   TERM_LABEL_STORAGE_KEY,
 } from "./constants"
+import {
+  type DragData,
+  type EquationState,
+  type HistoryEntry,
+  type KeypadField,
+  type PlacedTerm,
+  type TermLabels,
+  type TermLabelSettingsState,
+} from "./types"
 import {
   createEquationState,
   formatExpressionTeX,
@@ -21,15 +28,6 @@ import {
   isSolved,
   sideFromDropId,
 } from "./utils"
-import {
-  type DragData,
-  type EquationState,
-  type HistoryEntry,
-  type KeypadField,
-  type PlacedTerm,
-  type TermLabelSettingsState,
-  type TermLabels,
-} from "./types"
 
 const parseInteger = (value: string) => {
   const trimmed = value.trim()
@@ -566,16 +564,14 @@ export function usePracticeLab() {
         }
 
         const source = data.term
-        const originalSign = source.coeff >= 0 ? 1 : -1
         const newTerm: PlacedTerm = {
           instanceId: createId(),
           sourceId: source.id,
-          baseCoeff: Math.abs(source.coeff),
-          originalSign: originalSign as 1 | -1,
+          baseCoeff: source.coeff,
           isVariable: source.isVariable,
           originalSide: source.side,
           side: targetSide,
-          sign: originalSign as 1 | -1,
+          sign: 1,
         }
 
         setPlacedTerms((prev) => [...prev, newTerm])

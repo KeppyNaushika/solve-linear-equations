@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, type Dispatch, type SetStateAction } from "react"
 
-import { MathJax } from "better-react-mathjax"
 import {
   DndContext,
   DragOverlay,
   type DndContextProps,
 } from "@dnd-kit/core"
+import { MathJax } from "better-react-mathjax"
 
 import {
   Card,
@@ -19,13 +19,14 @@ import {
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
+import type { LinearEquation } from "@/lib/equations"
 import { CoefficientEntry } from "./coefficient-entry"
-import { DragPreview } from "./term-card"
 import { DropColumn } from "./drop-column"
 import { EquationRow } from "./equation-row"
 import { Keypad, type KeypadVariant } from "./keypad"
-import { SourceZone } from "./source-zone"
 import { TermLabelSettingsPopover } from "./settings-popover"
+import { SourceZone } from "./source-zone"
+import { DragPreview } from "./term-card"
 import type {
   DragData,
   KeypadField,
@@ -34,7 +35,6 @@ import type {
   TermLabelSettingsState,
   TermLabels,
 } from "./types"
-import type { LinearEquation } from "@/lib/equations"
 
 type PracticeEquationCardProps = {
   highlightEquation: boolean
@@ -178,6 +178,15 @@ export function PracticeEquationCard({
   const divisionRowDimmed = stage !== 3
   const solutionRowDimmed = stage !== 4 || solutionMatches
 
+  const allPlacedTerms = [...leftPlaced, ...rightPlaced]
+  const placedSourceIds = new Set(allPlacedTerms.map((term) => term.sourceId))
+  const leftSourcesPlaced = sourceLeftTerms.every((source) =>
+    placedSourceIds.has(source.id)
+  )
+  const rightSourcesPlaced = sourceRightTerms.every((source) =>
+    placedSourceIds.has(source.id)
+  )
+
   const renderKeypad = (
     fieldState: { editable: boolean; showKeypad: boolean },
     variant: KeypadVariant = "default"
@@ -289,6 +298,7 @@ export function PracticeEquationCard({
                     activeId={activeId}
                     showExpression={solved}
                     highlightSignHint={termLabelSettings.highlightSignHint}
+                    allSourcesPlaced={leftSourcesPlaced}
                   />
                 }
                 right={
@@ -301,6 +311,7 @@ export function PracticeEquationCard({
                     activeId={activeId}
                     showExpression={solved}
                     highlightSignHint={termLabelSettings.highlightSignHint}
+                    allSourcesPlaced={rightSourcesPlaced}
                   />
                 }
               />

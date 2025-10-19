@@ -3,7 +3,7 @@ import {
   generateLinearEquation,
   type EquationConstraints,
 } from "@/lib/equations"
-
+import { DROP_ZONE_ID } from "./constants"
 import {
   type DragData,
   type EquationState,
@@ -11,7 +11,6 @@ import {
   type Side,
   type SourceTerm,
 } from "./types"
-import { DROP_ZONE_ID } from "./constants"
 
 export function createTerm(coeff: number, isVariable: boolean, side: Side): SourceTerm {
   return {
@@ -61,9 +60,7 @@ export function getPlacedCoeff(term: PlacedTerm) {
 }
 
 export function expectedSign(term: PlacedTerm): 1 | -1 {
-  return term.side === term.originalSide
-    ? term.originalSign
-    : (term.originalSign === 1 ? -1 : 1)
+  return term.side === term.originalSide ? 1 : -1
 }
 
 export function isTermPositionCorrect(term: PlacedTerm) {

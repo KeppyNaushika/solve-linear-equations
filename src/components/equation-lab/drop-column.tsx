@@ -1,20 +1,20 @@
 "use client"
 
-import { MathJax } from "better-react-mathjax"
 import { useDroppable } from "@dnd-kit/core"
+import { MathJax } from "better-react-mathjax"
 
 import { cn } from "@/lib/utils"
 
+import { DROP_ZONE_ID } from "./constants"
+import { TermCard } from "./term-card"
 import type { DragData, PlacedTerm, Side, TermLabels } from "./types"
 import {
+  formatCardText,
+  formatExpressionTeX,
   getPlacedCoeff,
   isTermPositionCorrect,
   isTermSignCorrect,
-  formatCardText,
-  formatExpressionTeX,
 } from "./utils"
-import { DROP_ZONE_ID } from "./constants"
-import { TermCard } from "./term-card"
 
 type DropColumnProps = {
   id: Side
@@ -25,6 +25,7 @@ type DropColumnProps = {
   showHelper: boolean
   showExpression: boolean
   highlightSignHint: boolean
+  allSourcesPlaced: boolean
 }
 
 export function DropColumn({
@@ -36,6 +37,7 @@ export function DropColumn({
   showHelper,
   showExpression,
   highlightSignHint,
+  allSourcesPlaced,
 }: DropColumnProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: DROP_ZONE_ID[id],
@@ -44,7 +46,9 @@ export function DropColumn({
   const hasTerms = terms.length > 0
   const allPositionCorrect = hasTerms ? terms.every(isTermPositionCorrect) : false
   const allSignCorrect =
-    hasTerms && terms.every((term) => isTermPositionCorrect(term) && isTermSignCorrect(term))
+    allSourcesPlaced &&
+    hasTerms &&
+    terms.every((term) => isTermPositionCorrect(term) && isTermSignCorrect(term))
 
   const zoneStatusClass = !hasTerms
     ? ""

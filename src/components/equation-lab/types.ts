@@ -15,7 +15,6 @@ export type PlacedTerm = {
   instanceId: string
   sourceId: string
   baseCoeff: number
-  originalSign: 1 | -1
   isVariable: boolean
   originalSide: Side
   side: Side

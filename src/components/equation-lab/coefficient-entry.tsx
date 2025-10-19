@@ -1,9 +1,7 @@
 "use client"
 
-import { useEffect, useRef, type ReactNode } from "react"
-
 import { cn } from "@/lib/utils"
-
+import { useEffect, useRef, type ReactNode } from "react"
 import { Keypad, type KeypadVariant } from "./keypad"
 import type { KeypadField } from "./types"
 

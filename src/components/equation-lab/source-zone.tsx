@@ -1,13 +1,11 @@
 "use client"
 
-import { MathJax } from "better-react-mathjax"
-import { useDroppable } from "@dnd-kit/core"
-
 import { cn } from "@/lib/utils"
-
-import type { DragData, SourceTerm, TermLabels } from "./types"
+import { useDroppable } from "@dnd-kit/core"
+import { MathJax } from "better-react-mathjax"
 import { DROP_ZONE_ID } from "./constants"
 import { TermCard } from "./term-card"
+import type { DragData, SourceTerm, TermLabels } from "./types"
 import { formatCardText, formatExpressionTeX } from "./utils"
 
 type SourceZoneProps = {
