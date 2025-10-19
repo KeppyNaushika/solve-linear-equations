@@ -1,3 +1,5 @@
+"use client"
+
 import { MathJax } from "better-react-mathjax"
 import { useDroppable } from "@dnd-kit/core"
 

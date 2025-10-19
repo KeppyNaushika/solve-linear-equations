@@ -7,7 +7,6 @@ import type { KeypadField } from "./types"
 type CoefficientEntryProps = {
   label: string
   value: string
-  expected: number | null
   field: KeypadField
   stage: number
   activeField: KeypadField | null
