@@ -328,33 +328,30 @@ export function usePracticeLab() {
     }
 
     if (!placedTerms.length) {
-      return "上段のカード棚から項カードを選び、下段の左右に配置して途中式を作りましょう。枠の色で進捗を確認できます。"
+      return "カードを選んで、下の枠に置いてみましょう。"
     }
 
     if (solved) {
-      return `よくできました！x = ${equation.solution}。`
+      return `できました！x = ${equation.solution}`
     }
-
-    const variableCardLabel = `${resolvedLabels.variable}カード`
-    const constantCardLabel = `${resolvedLabels.constant}カード`
 
     const leftHasNumber = leftPlaced.some((term) => !term.isVariable)
     const rightHasVariable = rightPlaced.some((term) => term.isVariable)
 
     if (leftHasNumber && rightHasVariable) {
-      return `${constantCardLabel}は右辺へ、${variableCardLabel}は左辺へ寄せてから、必要に応じてカード右上のボタンで符号を整えましょう。`
+      return "数のカードは右へ、文字を含むカードは左へ動かしましょう。"
     }
 
     if (leftHasNumber) {
-      return `${constantCardLabel}を右辺へ移し、カード右上のボタンで符号を合わせましょう。`
+      return "数のカードを右へ動かしましょう。"
     }
 
     if (rightHasVariable) {
-      return `${variableCardLabel}を左辺に置き直し、ボタンで符号が期待通りになるよう調整しましょう。`
+      return "xのカードを左へ動かしましょう。"
     }
 
-    return "枠が黄色なら位置は正解です。緑になるまで符号ボタンで整えてみましょう。"
-  }, [equation, leftPlaced, placedTerms.length, resolvedLabels, rightPlaced, solved])
+    return "移項したカードをクリックして、符号（ + と - ）を変えてみましょう。"
+  }, [equation, leftPlaced, placedTerms.length, rightPlaced, solved])
 
   const loadNextEquation = useCallback(() => {
     const constraints = {
