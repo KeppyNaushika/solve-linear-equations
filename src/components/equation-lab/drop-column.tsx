@@ -47,8 +47,8 @@ export function DropColumn({
   const allPositionCorrect = hasTerms ? terms.every(isTermPositionCorrect) : false
   const allSignCorrect =
     allSourcesPlaced &&
-    hasTerms &&
-    terms.every((term) => isTermPositionCorrect(term) && isTermSignCorrect(term))
+    allPositionCorrect &&
+    terms.every(isTermSignCorrect)
 
   const zoneStatusClass = !hasTerms
     ? ""
