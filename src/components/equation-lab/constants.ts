@@ -12,6 +12,9 @@ export const TERM_LABEL_STORAGE_KEY = "linear-equation-lab:term-label-settings"
 export const defaultTermLabelSettings: TermLabelSettingsState = {
   showHelper: true,
   highlightSignHint: true,
+  forceLeftConstantZero: false,
+  forceRightVariableZero: false,
+  forceRightConstantZero: false,
 }
 
 export const DEFAULT_TERM_LABELS: TermLabels = {

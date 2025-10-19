@@ -128,7 +128,6 @@ export function usePracticeLab() {
   const [state, setState] = useState<EquationState | null>(null)
   const [placedTerms, setPlacedTerms] = useState<PlacedTerm[]>([])
   const [history, setHistory] = useState<HistoryEntry[]>([])
-  const [moveCount, setMoveCount] = useState(0)
   const [solvedCount, setSolvedCount] = useState(0)
   const [keepPracticing, setKeepPracticing] = useState(true)
   const [highlightEquation, setHighlightEquation] = useState(true)
@@ -186,6 +185,18 @@ export function usePracticeLab() {
           typeof parsed.highlightSignHint === "boolean"
             ? parsed.highlightSignHint
             : prev.highlightSignHint ?? defaultTermLabelSettings.highlightSignHint,
+        forceLeftConstantZero:
+          typeof parsed.forceLeftConstantZero === "boolean"
+            ? parsed.forceLeftConstantZero
+            : prev.forceLeftConstantZero ?? defaultTermLabelSettings.forceLeftConstantZero,
+        forceRightVariableZero:
+          typeof parsed.forceRightVariableZero === "boolean"
+            ? parsed.forceRightVariableZero
+            : prev.forceRightVariableZero ?? defaultTermLabelSettings.forceRightVariableZero,
+        forceRightConstantZero:
+          typeof parsed.forceRightConstantZero === "boolean"
+            ? parsed.forceRightConstantZero
+            : prev.forceRightConstantZero ?? defaultTermLabelSettings.forceRightConstantZero,
       }))
     } catch {
       // 無効な JSON は無視する
@@ -293,8 +304,8 @@ export function usePracticeLab() {
   const constantMatches =
     stage >= 2 && constantValue !== null && constantValue === rightConstant
   const divisionMatches =
-    stage >= 3 && divisionValue !== null && equation
-      ? divisionValue === equation.solution
+    stage >= 3 && divisionValue !== null
+      ? divisionValue === leftCoefficient
       : false
   const solutionMatches =
     stage >= 4 && solutionValue !== null && equation
@@ -346,7 +357,12 @@ export function usePracticeLab() {
   }, [equation, leftPlaced, placedTerms.length, resolvedLabels, rightPlaced, solved])
 
   const loadNextEquation = useCallback(() => {
-    const nextState = createEquationState()
+    const constraints = {
+      forceLeftConstantZero: termLabelSettings.forceLeftConstantZero,
+      forceRightVariableZero: termLabelSettings.forceRightVariableZero,
+      forceRightConstantZero: termLabelSettings.forceRightConstantZero,
+    }
+    const nextState = createEquationState(constraints)
     const { equation: nextEquation } = nextState
     setState(nextState)
     setPlacedTerms([])
@@ -357,7 +373,6 @@ export function usePracticeLab() {
         tex: formatEquationTeX(nextEquation),
       },
     ])
-    setMoveCount(0)
     setHighlightEquation(true)
     setActiveId(null)
     setStage(1)
@@ -367,7 +382,7 @@ export function usePracticeLab() {
     setSolutionInput("")
     setActiveKeypadField(null)
     lastSolvedEquationId.current = null
-  }, [])
+  }, [termLabelSettings])
 
   useEffect(() => {
     if (!state) {
@@ -425,9 +440,14 @@ export function usePracticeLab() {
 
   useEffect(() => {
     if (stage >= 2 && coefficientMatches && constantMatches) {
-      setStage((prev) => Math.max(prev, 3))
+      // If coefficient is 1, skip division and go straight to solution
+      if (leftCoefficient === 1) {
+        setStage((prev) => Math.max(prev, 4))
+      } else {
+        setStage((prev) => Math.max(prev, 3))
+      }
     }
-  }, [stage, coefficientMatches, constantMatches])
+  }, [stage, coefficientMatches, constantMatches, leftCoefficient])
 
   useEffect(() => {
     if (stage >= 3 && divisionMatches) {
@@ -560,7 +580,6 @@ export function usePracticeLab() {
         }
 
         setPlacedTerms((prev) => [...prev, newTerm])
-        setMoveCount((count) => count + 1)
         return
       }
 
@@ -577,7 +596,6 @@ export function usePracticeLab() {
         }
 
         setPlacedTerms((prev) => {
-          let moved = false
           const next = prev.map((term) => {
             if (term.instanceId !== data.term.instanceId) {
               return term
@@ -587,16 +605,12 @@ export function usePracticeLab() {
               return term
             }
 
-            moved = true
             return {
               ...term,
               side: targetSide,
             }
           })
 
-          if (moved) {
-            setMoveCount((count) => count + 1)
-          }
 
           return next
         })
@@ -616,7 +630,6 @@ export function usePracticeLab() {
 
   const clearPlacedTerms = useCallback(() => {
     setPlacedTerms([])
-    setMoveCount(0)
     setStage(1)
     setCoefficientInput("")
     setConstantInput("")
@@ -633,7 +646,6 @@ export function usePracticeLab() {
           : term
       )
     )
-    setMoveCount((count) => count + 1)
   }, [])
 
   const sanitizeInputValue = useCallback((field: KeypadField, value: string) => {
@@ -758,7 +770,6 @@ export function usePracticeLab() {
     solutionMatches,
     activeDrag,
     hint,
-    moveCount,
     history,
     solvedCount,
     solved,

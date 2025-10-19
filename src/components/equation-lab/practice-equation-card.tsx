@@ -68,7 +68,6 @@ type PracticeEquationCardProps = {
   solutionMatches: boolean
   activeDrag: DragData | null
   hint: string
-  moveCount: number
   solved: boolean
   onDigit: (digit: string) => void
   onBackspace: () => void
@@ -139,7 +138,6 @@ export function PracticeEquationCard({
   solutionMatches,
   activeDrag,
   hint,
-  moveCount,
   solved,
   onDigit,
   onBackspace,
@@ -363,7 +361,6 @@ export function PracticeEquationCard({
                   <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-base font-medium text-foreground md:text-lg">
                     <span className="leading-tight">両辺を</span>
                     <div className="flex items-center gap-2">
-                      <span className="leading-tight">[(</span>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -386,7 +383,6 @@ export function PracticeEquationCard({
                         )}
                         aria-label="x の係数を入力"
                       />
-                      <span className="leading-tight">)]</span>
                     </div>
                     <span className="leading-tight">で割ると</span>
                   </div>
@@ -466,9 +462,6 @@ export function PracticeEquationCard({
 
         <div className="flex flex-col gap-3 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-4 py-3 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
           <span>{hint}</span>
-          <span className="font-medium text-foreground">
-            この問題でカードを動かした回数: {moveCount}
-          </span>
         </div>
       </CardContent>
     </Card>

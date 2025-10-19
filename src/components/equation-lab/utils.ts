@@ -1,4 +1,8 @@
-import { createId, generateLinearEquation } from "@/lib/equations"
+import {
+  createId,
+  generateLinearEquation,
+  type EquationConstraints,
+} from "@/lib/equations"
 
 import {
   type DragData,
@@ -34,8 +38,8 @@ export function buildTermsFromEquation(equation: EquationState["equation"]): Sou
   return terms
 }
 
-export function createEquationState(): EquationState {
-  const equation = generateLinearEquation()
+export function createEquationState(constraints?: EquationConstraints): EquationState {
+  const equation = generateLinearEquation(constraints)
   return {
     equation,
     sourceTerms: buildTermsFromEquation(equation),

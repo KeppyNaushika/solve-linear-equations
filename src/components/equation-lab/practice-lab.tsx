@@ -37,7 +37,6 @@ export default function PracticeLab() {
     solutionMatches,
     activeDrag,
     hint,
-    moveCount,
     solvedCount,
     solved,
     keepPracticing,
@@ -91,7 +90,6 @@ export default function PracticeLab() {
         solutionMatches={solutionMatches}
         activeDrag={activeDrag}
         hint={hint}
-        moveCount={moveCount}
         solved={solved}
         onDigit={handleDigit}
         onBackspace={handleBackspace}

@@ -71,6 +71,55 @@ export function TermLabelSettingsPopover({
           />
         </div>
 
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-foreground">方程式の制約</h3>
+          <p className="text-xs text-muted-foreground">
+            生成される方程式 ax+b=cx+d の特定の係数を0にできます。
+          </p>
+        </div>
+
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-muted/30 p-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">左辺の定数項を0にする (b=0)</p>
+            <p className="text-xs text-muted-foreground">
+              ax = cx + d の形式の方程式を生成します。
+            </p>
+          </div>
+          <Switch
+            checked={settings.forceLeftConstantZero}
+            onCheckedChange={handleToggle("forceLeftConstantZero")}
+            aria-label="左辺の定数項を0にする"
+          />
+        </div>
+
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-muted/30 p-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">右辺の変数項を0にする (c=0)</p>
+            <p className="text-xs text-muted-foreground">
+              ax + b = d の形式の方程式を生成します。
+            </p>
+          </div>
+          <Switch
+            checked={settings.forceRightVariableZero}
+            onCheckedChange={handleToggle("forceRightVariableZero")}
+            aria-label="右辺の変数項を0にする"
+          />
+        </div>
+
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-muted/30 p-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">右辺の定数項を0にする (d=0)</p>
+            <p className="text-xs text-muted-foreground">
+              ax + b = cx の形式の方程式を生成します。
+            </p>
+          </div>
+          <Switch
+            checked={settings.forceRightConstantZero}
+            onCheckedChange={handleToggle("forceRightConstantZero")}
+            aria-label="右辺の定数項を0にする"
+          />
+        </div>
+
         <p className="text-xs text-muted-foreground">
           設定内容はブラウザに保存され、次回アクセス時にも引き継がれます。
         </p>

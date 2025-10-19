@@ -7,6 +7,12 @@ export type LinearEquation = {
   solution: number
 }
 
+export type EquationConstraints = {
+  forceLeftConstantZero?: boolean
+  forceRightVariableZero?: boolean
+  forceRightConstantZero?: boolean
+}
+
 export function createId() {
   const globalCrypto = typeof globalThis === "object" ? (globalThis.crypto as Crypto | undefined) : undefined
 
@@ -59,24 +65,38 @@ function randomNonZero(min: number, max: number) {
 /**
  * Generate a linear equation ax + b = cx + d whose solution is an integer.
  */
-export function generateLinearEquation(): LinearEquation {
+export function generateLinearEquation(constraints?: EquationConstraints): LinearEquation {
   while (true) {
     const leftVariable = randomNonZero(RANGE.variable.min, RANGE.variable.max)
-    const rightVariable = randomNonZero(RANGE.variable.min, RANGE.variable.max)
-    if (leftVariable === rightVariable) {
-      continue
+
+    let rightVariable: number
+    if (constraints?.forceRightVariableZero) {
+      rightVariable = 0
+    } else {
+      rightVariable = randomNonZero(RANGE.variable.min, RANGE.variable.max)
+      if (leftVariable === rightVariable) {
+        continue
+      }
     }
 
-    const leftConstant = randomNonZero(
-      RANGE.constant.min,
-      RANGE.constant.max
-    )
-    const rightConstant = randomInt(RANGE.constant.min, RANGE.constant.max)
+    let leftConstant: number
+    if (constraints?.forceLeftConstantZero) {
+      leftConstant = 0
+    } else {
+      leftConstant = randomNonZero(RANGE.constant.min, RANGE.constant.max)
+    }
+
+    let rightConstant: number
+    if (constraints?.forceRightConstantZero) {
+      rightConstant = 0
+    } else {
+      rightConstant = randomInt(RANGE.constant.min, RANGE.constant.max)
+    }
 
     const numerator = rightConstant - leftConstant
     const denominator = leftVariable - rightVariable
 
-    if (numerator % denominator !== 0) {
+    if (denominator === 0 || numerator % denominator !== 0) {
       continue
     }
 
