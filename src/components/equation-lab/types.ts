@@ -27,9 +27,8 @@ export type EquationState = {
 }
 
 export type TermLabelSettingsState = {
-  variableLabel: string
-  constantLabel: string
   showHelper: boolean
+  highlightSignHint: boolean
 }
 
 export type TermLabels = {

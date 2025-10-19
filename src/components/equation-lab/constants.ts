@@ -1,4 +1,4 @@
-import type { TermLabelSettingsState } from "./types"
+import type { TermLabelSettingsState, TermLabels } from "./types"
 
 export const DROP_ZONE_ID = {
   poolLeft: "drop-pool-left",
@@ -10,7 +10,11 @@ export const DROP_ZONE_ID = {
 export const TERM_LABEL_STORAGE_KEY = "linear-equation-lab:term-label-settings"
 
 export const defaultTermLabelSettings: TermLabelSettingsState = {
-  variableLabel: "文字を含む項",
-  constantLabel: "数の項",
   showHelper: true,
+  highlightSignHint: true,
+}
+
+export const DEFAULT_TERM_LABELS: TermLabels = {
+  variable: "文字を含む項",
+  constant: "数の項",
 }

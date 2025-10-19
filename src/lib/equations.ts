@@ -7,6 +7,37 @@ export type LinearEquation = {
   solution: number
 }
 
+export function createId() {
+  const globalCrypto = typeof globalThis === "object" ? (globalThis.crypto as Crypto | undefined) : undefined
+
+  if (globalCrypto && typeof globalCrypto.randomUUID === "function") {
+    return globalCrypto.randomUUID()
+  }
+
+  if (globalCrypto && typeof globalCrypto.getRandomValues === "function") {
+    const buffer = new Uint8Array(16)
+    globalCrypto.getRandomValues(buffer)
+
+    // Per RFC 4122 section 4.4
+    buffer[6] = (buffer[6] & 0x0f) | 0x40
+    buffer[8] = (buffer[8] & 0x3f) | 0x80
+
+    const hex = Array.from(buffer, (byte) =>
+      byte.toString(16).padStart(2, "0")
+    ).join("")
+
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20),
+    ].join("-")
+  }
+
+  return `eq-${Math.random().toString(36).slice(2)}-${Date.now()}`
+}
+
 const RANGE = {
   variable: { min: -9, max: 9 },
   constant: { min: -12, max: 12 },
@@ -60,7 +91,7 @@ export function generateLinearEquation(): LinearEquation {
     }
 
     return {
-      id: crypto.randomUUID(),
+      id: createId(),
       leftVariable,
       leftConstant,
       rightVariable,

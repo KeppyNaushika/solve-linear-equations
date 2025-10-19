@@ -1,11 +1,11 @@
 "use client"
 
-import { useCallback, useState, type ChangeEvent } from "react"
+import { useCallback, useState } from "react"
 import { Settings2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Switch } from "@/components/ui/switch"
 
 import type { TermLabelSettingsState } from "./types"
 
@@ -20,75 +20,56 @@ export function TermLabelSettingsPopover({
 }: TermLabelSettingsPopoverProps) {
   const [open, setOpen] = useState(false)
 
-  const handleInputChange = useCallback(
-    (key: "variableLabel" | "constantLabel") =>
-      (event: ChangeEvent<HTMLInputElement>) => {
-        onSettingsChange({
-          ...settings,
-          [key]: event.target.value,
-        })
-      },
+  const handleToggle = useCallback(
+    (key: keyof TermLabelSettingsState) => (checked: boolean) => {
+      onSettingsChange({
+        ...settings,
+        [key]: checked,
+      })
+    },
     [onSettingsChange, settings]
   )
-
-  const toggleShowHelper = useCallback(() => {
-    onSettingsChange({
-      ...settings,
-      showHelper: !settings.showHelper,
-    })
-  }, [onSettingsChange, settings])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="h-9 w-9"
-          aria-label="カードラベル設定を開く"
-        >
+        <Button type="button" variant="outline" size="icon" className="h-9 w-9" aria-label="表示設定を開く">
           <Settings2 className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="space-y-4 bg-background">
+      <PopoverContent align="end" className="w-72 space-y-4 bg-white p-4 shadow-lg">
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-foreground">ラベル設定</h3>
+          <h3 className="text-sm font-semibold text-foreground">表示設定</h3>
           <p className="text-xs text-muted-foreground">
-            学習者に合わせてカード下部のラベルと表示方法をカスタマイズできます。
+            カードのラベル表示やヒントの強調を切り替えられます。
           </p>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-muted-foreground">
-            文字を含む項のラベル
-          </label>
-          <Input
-            value={settings.variableLabel}
-            onChange={handleInputChange("variableLabel")}
-            placeholder="例: x を含む項"
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-muted/30 p-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">カード下部のラベル</p>
+            <p className="text-xs text-muted-foreground">カードの種類を示すラベルを表示します。</p>
+          </div>
+          <Switch
+            checked={settings.showHelper}
+            onCheckedChange={handleToggle("showHelper")}
+            aria-label="カードのラベル表示を切り替える"
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-muted-foreground">
-            数の項のラベル
-          </label>
-          <Input
-            value={settings.constantLabel}
-            onChange={handleInputChange("constantLabel")}
-            placeholder="例: 数だけの項"
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-muted/30 p-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">符号調整が必要なカードの強調</p>
+            <p className="text-xs text-muted-foreground">
+              ドラッグ後に符号を変える必要があるカードをオレンジ色で示します。
+            </p>
+          </div>
+          <Switch
+            checked={settings.highlightSignHint}
+            onCheckedChange={handleToggle("highlightSignHint")}
+            aria-label="符号調整のヒント表示を切り替える"
           />
         </div>
-
-        <Button
-          type="button"
-          variant="secondary"
-          className="w-full"
-          onClick={toggleShowHelper}
-        >
-          {settings.showHelper ? "カードのラベルを隠す" : "カードのラベルを表示する"}
-        </Button>
 
         <p className="text-xs text-muted-foreground">
           設定内容はブラウザに保存され、次回アクセス時にも引き継がれます。

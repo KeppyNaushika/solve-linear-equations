@@ -1,10 +1,10 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { useEffect, useRef, type ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
 
-import { Keypad } from "./keypad"
+import { Keypad, type KeypadVariant } from "./keypad"
 import type { KeypadField } from "./types"
 
 type CoefficientEntryProps = {
@@ -26,6 +26,7 @@ type CoefficientEntryProps = {
   onBackspace: () => void
   onClear: () => void
   onToggleSign: () => void
+  keypadVariant?: KeypadVariant
 }
 
 export function CoefficientEntry({
@@ -47,12 +48,29 @@ export function CoefficientEntry({
   onBackspace,
   onClear,
   onToggleSign,
+  keypadVariant = "default",
 }: CoefficientEntryProps) {
   const isActive = activeField === field
   const showInput = stage >= 2
   const isInline = layout === "inline"
   const resolvedAriaLabel = ariaLabel ?? label ?? "数値を入力"
   const showLabel = Boolean(label)
+  const inputPattern = field === "coefficient" ? "-?[0-9]*x?" : "-?[0-9]*"
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!showInput || !editable || !isActive) {
+      return
+    }
+
+    const node = inputRef.current
+    if (!node) {
+      return
+    }
+
+    node.focus()
+    node.setSelectionRange(node.value.length, node.value.length)
+  }, [editable, isActive, showInput])
 
   if (!showInput) {
     return (
@@ -87,12 +105,13 @@ export function CoefficientEntry({
           <input
             type="text"
             inputMode="numeric"
-            pattern="-?[0-9]*"
+            pattern={inputPattern}
             value={value}
             readOnly={!editable}
             onFocus={() => onFocus(field)}
             onClick={() => onFocus(field)}
             onChange={(event) => onInputChange(field, event.target.value)}
+            ref={inputRef}
             className={cn(
               "w-full rounded-lg border px-4 py-3 text-lg font-semibold text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
               matches
@@ -100,7 +119,7 @@ export function CoefficientEntry({
                 : isActive
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border bg-background text-foreground",
-              isInline && "max-w-[240px]"
+              isInline && "max-w-none"
             )}
             aria-label={resolvedAriaLabel}
           />
@@ -116,7 +135,9 @@ export function CoefficientEntry({
           </p>
         ) : (
           <p className="text-xs text-muted-foreground text-center">
-            テンキーまたはキーボードで整数を入力
+            {field === "coefficient"
+              ? "テンキーで符号・数字・x をつけて整数係数を入力"
+              : "テンキーまたはキーボードで整数を入力"}
           </p>
         )}
         {showKeypad ? (
@@ -126,6 +147,7 @@ export function CoefficientEntry({
             onBackspace={onBackspace}
             onClear={onClear}
             onToggleSign={onToggleSign}
+            variant={keypadVariant}
           />
         ) : null}
       </div>

@@ -1,19 +1,17 @@
-import { generateLinearEquation } from "@/lib/equations"
+import { createId, generateLinearEquation } from "@/lib/equations"
 
 import {
-  type TermLabelSettingsState,
-  type TermLabels,
   type DragData,
   type EquationState,
   type PlacedTerm,
   type Side,
   type SourceTerm,
 } from "./types"
-import { DROP_ZONE_ID, defaultTermLabelSettings } from "./constants"
+import { DROP_ZONE_ID } from "./constants"
 
 export function createTerm(coeff: number, isVariable: boolean, side: Side): SourceTerm {
   return {
-    id: crypto.randomUUID(),
+    id: createId(),
     coeff,
     isVariable,
     side,
@@ -142,8 +140,15 @@ export function getCardStatusClass(options: {
   isVariable: boolean
   isPositionCorrect?: boolean
   isSignCorrect?: boolean
+  showSignHint?: boolean
 }) {
-  const { isSource, isVariable, isPositionCorrect = false, isSignCorrect = false } = options
+  const {
+    isSource,
+    isVariable,
+    isPositionCorrect = false,
+    isSignCorrect = false,
+    showSignHint = true,
+  } = options
   if (isSource) {
     return isVariable
       ? "bg-primary/5 border-primary/40"
@@ -152,6 +157,10 @@ export function getCardStatusClass(options: {
 
   if (!isPositionCorrect) {
     return "border-destructive/60 bg-destructive/10"
+  }
+
+  if (!showSignHint) {
+    return "border-border bg-background"
   }
 
   if (isSignCorrect) {
@@ -213,13 +222,6 @@ export function isSolved(placed: PlacedTerm[], equation: EquationState["equation
 
 export function isPoolDropZone(id: string | number) {
   return id === DROP_ZONE_ID.poolLeft || id === DROP_ZONE_ID.poolRight
-}
-
-export function normalizeTermLabels(labels: TermLabelSettingsState): TermLabels {
-  return {
-    variable: labels.variableLabel.trim() || defaultTermLabelSettings.variableLabel,
-    constant: labels.constantLabel.trim() || defaultTermLabelSettings.constantLabel,
-  }
 }
 
 export type { DragData }

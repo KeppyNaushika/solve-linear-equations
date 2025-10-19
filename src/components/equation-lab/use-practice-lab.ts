@@ -5,9 +5,10 @@ import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core"
 import { PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { toast } from "sonner"
 
-import { formatEquation, formatEquationTeX } from "@/lib/equations"
+import { createId, formatEquation, formatEquationTeX } from "@/lib/equations"
 
 import {
+  DEFAULT_TERM_LABELS,
   defaultTermLabelSettings,
   TERM_LABEL_STORAGE_KEY,
 } from "./constants"
@@ -18,7 +19,6 @@ import {
   getPlacedCoeff,
   isPoolDropZone,
   isSolved,
-  normalizeTermLabels,
   sideFromDropId,
 } from "./utils"
 import {
@@ -40,6 +40,88 @@ const parseInteger = (value: string) => {
     return null
   }
   return parsed
+}
+
+const parseCoefficient = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === "-") {
+    return null
+  }
+
+  const normalized = trimmed.toLowerCase()
+  if (!normalized.endsWith("x")) {
+    return null
+  }
+
+  const numericPart = normalized.slice(0, -1)
+  if (!numericPart || numericPart === "+") {
+    return 1
+  }
+  if (numericPart === "-") {
+    return -1
+  }
+
+  const parsed = Number(numericPart)
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+    return null
+  }
+  return parsed
+}
+
+const sanitizeNumericValue = (value: string) => {
+  if (!value) return ""
+  if (value === "-") return "-"
+  const negative = value.startsWith("-")
+  let digits = negative ? value.slice(1) : value
+  digits = digits.replace(/[^0-9]/g, "")
+  if (!digits) {
+    return negative ? "-" : ""
+  }
+  digits = digits.replace(/^0+(?=\d)/, "")
+  if (digits === "") digits = "0"
+  return negative ? `-${digits}` : digits
+}
+
+const sanitizeCoefficientValue = (value: string) => {
+  if (!value) return ""
+  const trimmed = value.replace(/\s+/g, "")
+  if (!trimmed) return ""
+
+  const isNegative = trimmed.startsWith("-")
+  const isPositive = trimmed.startsWith("+")
+  const rest = (isNegative || isPositive) ? trimmed.slice(1) : trimmed
+  let digits = ""
+  let hasX = false
+
+  for (const char of rest) {
+    if (char === "x" || char === "X") {
+      if (hasX) {
+        continue
+      }
+      hasX = true
+      continue
+    }
+    if (/[0-9]/.test(char)) {
+      if (hasX) {
+        continue
+      }
+      digits += char
+    }
+  }
+
+  if (!digits && !hasX) {
+    return isNegative ? "-" : ""
+  }
+
+  digits = digits.replace(/^0+(?=\d)/, "")
+  if (digits === "") {
+    if (!hasX) {
+      return isNegative ? "-" : ""
+    }
+  }
+
+  const prefix = isNegative ? "-" : ""
+  return `${prefix}${digits}${hasX ? "x" : ""}`
 }
 
 export function usePracticeLab() {
@@ -68,10 +150,10 @@ export function usePracticeLab() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
+      activationConstraint: { distance: 4 },
     }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 75, tolerance: 8 },
+      activationConstraint: { distance: 6 },
     })
   )
 
@@ -98,18 +180,12 @@ export function usePracticeLab() {
       const parsed = JSON.parse(stored) as Partial<TermLabelSettingsState>
 
       setTermLabelSettings((prev) => ({
-        variableLabel:
-          typeof parsed.variableLabel === "string"
-            ? parsed.variableLabel
-            : prev.variableLabel,
-        constantLabel:
-          typeof parsed.constantLabel === "string"
-            ? parsed.constantLabel
-            : prev.constantLabel,
         showHelper:
-          typeof parsed.showHelper === "boolean"
-            ? parsed.showHelper
-            : prev.showHelper,
+          typeof parsed.showHelper === "boolean" ? parsed.showHelper : prev.showHelper,
+        highlightSignHint:
+          typeof parsed.highlightSignHint === "boolean"
+            ? parsed.highlightSignHint
+            : prev.highlightSignHint ?? defaultTermLabelSettings.highlightSignHint,
       }))
     } catch {
       // 無効な JSON は無視する
@@ -127,10 +203,7 @@ export function usePracticeLab() {
     )
   }, [termLabelSettings])
 
-  const resolvedLabels: TermLabels = useMemo(
-    () => normalizeTermLabels(termLabelSettings),
-    [termLabelSettings]
-  )
+  const resolvedLabels: TermLabels = DEFAULT_TERM_LABELS
 
   const leftPlaced = useMemo(
     () => placedTerms.filter((term) => term.side === "left"),
@@ -207,7 +280,7 @@ export function usePracticeLab() {
     [equation]
   )
 
-  const coefficientValue = parseInteger(coefficientInput)
+  const coefficientValue = parseCoefficient(coefficientInput)
   const constantValue = parseInteger(constantInput)
   const divisionValue = parseInteger(divisionInput)
   const solutionValue = parseInteger(solutionInput)
@@ -232,22 +305,6 @@ export function usePracticeLab() {
     () => (equation ? "\\(" + equationTeX + "\\)" : ""),
     [equation, equationTeX]
   )
-
-  const divisionExpression = useMemo(() => {
-    if (!equation) return ""
-    if (leftCoefficient === 0) {
-      return "x = \\text{未定義}"
-    }
-    return `x = \\dfrac{${rightConstant}}{${leftCoefficient}}`
-  }, [equation, leftCoefficient, rightConstant])
-
-  const finalExpression = useMemo(() => {
-    if (!equation) return ""
-    if (!divisionMatches) {
-      return "x = \\square"
-    }
-    return `x = ${equation.solution}`
-  }, [divisionMatches, equation])
 
   const solved = useMemo(
     () => (equation ? isSolved(placedTerms, equation) : false),
@@ -345,7 +402,7 @@ export function usePracticeLab() {
       return [
         ...prev,
         {
-          id: crypto.randomUUID(),
+          id: createId(),
           text,
           tex,
         },
@@ -493,7 +550,7 @@ export function usePracticeLab() {
 
         const source = data.term
         const newTerm: PlacedTerm = {
-          instanceId: crypto.randomUUID(),
+          instanceId: createId(),
           sourceId: source.id,
           baseCoeff: source.coeff,
           isVariable: source.isVariable,
@@ -579,41 +636,54 @@ export function usePracticeLab() {
     setMoveCount((count) => count + 1)
   }, [])
 
-  const sanitizeInputValue = (value: string) => {
-    if (!value) return ""
-    if (value === "-") return "-"
-    const negative = value.startsWith("-")
-    let digits = negative ? value.slice(1) : value
-    digits = digits.replace(/[^0-9]/g, "")
-    if (!digits) {
-      return negative ? "-" : ""
+  const sanitizeInputValue = useCallback((field: KeypadField, value: string) => {
+    if (field === "coefficient") {
+      return sanitizeCoefficientValue(value)
     }
-    digits = digits.replace(/^0+(?=\d)/, "")
-    if (digits === "") digits = "0"
-    return negative ? `-${digits}` : digits
-  }
+    return sanitizeNumericValue(value)
+  }, [])
 
-  const setFieldValue = (field: KeypadField, updater: (prev: string) => string) => {
-    const apply = (prev: string) => sanitizeInputValue(updater(prev))
-    switch (field) {
-      case "coefficient":
-        setCoefficientInput(apply)
-        break
-      case "constant":
-        setConstantInput(apply)
-        break
-      case "division":
-        setDivisionInput(apply)
-        break
-      case "solution":
-        setSolutionInput(apply)
-        break
-    }
-  }
+  const setFieldValue = useCallback(
+    (field: KeypadField, updater: (prev: string) => string) => {
+      const apply = (prev: string) => sanitizeInputValue(field, updater(prev))
+      switch (field) {
+        case "coefficient":
+          setCoefficientInput(apply)
+          break
+        case "constant":
+          setConstantInput(apply)
+          break
+        case "division":
+          setDivisionInput(apply)
+          break
+        case "solution":
+          setSolutionInput(apply)
+          break
+      }
+    },
+    [sanitizeInputValue]
+  )
 
   const handleDigit = (digit: string) => {
     if (!activeKeypadField) return
     setFieldValue(activeKeypadField, (prev) => {
+      if (activeKeypadField === "coefficient") {
+        if (digit === "x") {
+          if (prev.includes("x")) {
+            return prev
+          }
+          if (!prev || prev === "-" || prev === "+") {
+            return prev === "-" ? "-x" : "x"
+          }
+          return `${prev}x`
+        }
+        if (prev.includes("x")) {
+          return prev
+        }
+      } else if (digit === "x") {
+        return prev
+      }
+
       if (prev === "-" || prev === "") {
         return prev + digit
       }
@@ -654,7 +724,7 @@ export function usePracticeLab() {
     (field: KeypadField, rawValue: string) => {
       setFieldValue(field, () => rawValue)
     },
-    []
+    [setFieldValue]
   )
 
   return {
@@ -686,8 +756,6 @@ export function usePracticeLab() {
     constantMatches,
     divisionMatches,
     solutionMatches,
-    divisionExpression,
-    finalExpression,
     activeDrag,
     hint,
     moveCount,

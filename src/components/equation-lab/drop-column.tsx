@@ -23,7 +23,8 @@ type DropColumnProps = {
   onToggleSign: (instanceId: string) => void
   labels: TermLabels
   showHelper: boolean
-  stage: number
+  showExpression: boolean
+  highlightSignHint: boolean
 }
 
 export function DropColumn({
@@ -33,7 +34,8 @@ export function DropColumn({
   onToggleSign,
   labels,
   showHelper,
-  stage,
+  showExpression,
+  highlightSignHint,
 }: DropColumnProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: DROP_ZONE_ID[id],
@@ -55,8 +57,7 @@ export function DropColumn({
   const expressionTeX = formatExpressionTeX(
     terms.map((term) => ({ coeff: getPlacedCoeff(term), isVariable: term.isVariable }))
   )
-
-  const showExpressionOnly = stage >= 2
+  const showExpressionInZone = showExpression && hasTerms && allSignCorrect
 
   return (
     <div className="flex w-full flex-col items-center gap-2">
@@ -64,14 +65,14 @@ export function DropColumn({
         ref={setNodeRef}
         className={cn(
           "flex min-h-[140px] w-full flex-wrap items-center justify-center gap-3 rounded-xl p-4 transition-colors",
-          showExpressionOnly
+          showExpressionInZone
             ? "border border-border bg-background/80"
             : "border-2 border-dashed border-border bg-background/80",
-          !showExpressionOnly && zoneStatusClass,
-          !showExpressionOnly && isOver && "border-primary bg-primary/10"
+          !showExpressionInZone && zoneStatusClass,
+          !showExpressionInZone && isOver && "border-primary bg-primary/10"
         )}
       >
-        {showExpressionOnly ? (
+        {showExpressionInZone ? (
           <MathJax inline dynamic>{"\\(" + expressionTeX + "\\)"}</MathJax>
         ) : (
           <>
@@ -95,6 +96,7 @@ export function DropColumn({
                   isSignCorrect={signOk}
                   labels={labels}
                   showHelper={showHelper}
+                  highlightSignHint={highlightSignHint}
                 />
               )
             })}
@@ -106,9 +108,6 @@ export function DropColumn({
           </>
         )}
       </div>
-      {!showExpressionOnly && (
-        <MathJax inline dynamic>{"\\(" + expressionTeX + "\\)"}</MathJax>
-      )}
     </div>
   )
 }
