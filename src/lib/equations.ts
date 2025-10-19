@@ -135,11 +135,13 @@ export function formatEquationTeX(equation: LinearEquation) {
 
 function formatSide(variableCoeff: number, constant: number) {
   const parts: string[] = []
-  parts.push(formatTerm(variableCoeff, true, false))
+  if (variableCoeff !== 0) {
+    parts.push(formatTerm(variableCoeff, true, false))
+  }
   if (constant !== 0) {
     parts.push(formatTerm(constant, false, true))
   }
-  return parts.join(" ")
+  return parts.length > 0 ? parts.join(" ") : "0"
 }
 
 function formatTerm(
@@ -162,11 +164,13 @@ function formatTerm(
 
 function formatSideTeX(variableCoeff: number, constant: number) {
   const parts: string[] = []
-  parts.push(formatTermTeX(variableCoeff, true, false))
+  if (variableCoeff !== 0) {
+    parts.push(formatTermTeX(variableCoeff, true, false))
+  }
   if (constant !== 0) {
     parts.push(formatTermTeX(constant, false, true))
   }
-  return parts.join(" \\; ")
+  return parts.length > 0 ? parts.join(" \\; ") : "0"
 }
 
 function formatTermTeX(

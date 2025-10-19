@@ -405,7 +405,7 @@ export function PracticeEquationCard({
                     solutionRowDimmed && "opacity-40"
                   )}
                 >
-                  <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-2xl font-semibold text-foreground md:text-3xl">
+                  <div className="flex flex-wrap items-center justify-center gap-3 rounded-lg border border-border bg-background px-4 py-3 text-2xl font-semibold text-foreground md:text-3xl">
                     <span className="leading-tight">x =</span>
                     <input
                       type="text"
