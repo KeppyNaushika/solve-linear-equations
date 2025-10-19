@@ -1,5 +1,5 @@
-import EquationLab from "@/components/equation-lab/practice-lab"
+import PracticeLab from "@/components/equation-lab/practice-lab"
 
 export default function Home() {
-  return <EquationLab />
+  return <PracticeLab />
 }
