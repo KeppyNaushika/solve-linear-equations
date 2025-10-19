@@ -137,6 +137,30 @@ function formatExpressionTermTeX(
   return `${sign}\\,${magnitude}`
 }
 
+export function getCardStatusClass(options: {
+  isSource: boolean
+  isVariable: boolean
+  isPositionCorrect?: boolean
+  isSignCorrect?: boolean
+}) {
+  const { isSource, isVariable, isPositionCorrect = false, isSignCorrect = false } = options
+  if (isSource) {
+    return isVariable
+      ? "bg-primary/5 border-primary/40"
+      : "bg-secondary/40 border-secondary/50"
+  }
+
+  if (!isPositionCorrect) {
+    return "border-destructive/60 bg-destructive/10"
+  }
+
+  if (isSignCorrect) {
+    return "border-emerald-500/70 bg-emerald-500/10"
+  }
+
+  return "border-amber-500/70 bg-amber-500/10"
+}
+
 export function isSolved(placed: PlacedTerm[], equation: EquationState["equation"]) {
   if (!placed.length) {
     return false

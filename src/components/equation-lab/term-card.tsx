@@ -1,6 +1,4 @@
 "use client"
-
-import { useMemo } from "react"
 import { MathJax } from "better-react-mathjax"
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
