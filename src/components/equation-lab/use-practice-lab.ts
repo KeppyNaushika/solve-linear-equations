@@ -566,14 +566,16 @@ export function usePracticeLab() {
         }
 
         const source = data.term
+        const originalSign = source.coeff >= 0 ? 1 : -1
         const newTerm: PlacedTerm = {
           instanceId: createId(),
           sourceId: source.id,
-          baseCoeff: source.coeff,
+          baseCoeff: Math.abs(source.coeff),
+          originalSign: originalSign as 1 | -1,
           isVariable: source.isVariable,
           originalSide: source.side,
           side: targetSide,
-          sign: 1,
+          sign: originalSign as 1 | -1,
         }
 
         setPlacedTerms((prev) => [...prev, newTerm])

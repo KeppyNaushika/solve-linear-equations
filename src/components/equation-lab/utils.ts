@@ -61,7 +61,9 @@ export function getPlacedCoeff(term: PlacedTerm) {
 }
 
 export function expectedSign(term: PlacedTerm): 1 | -1 {
-  return term.side === term.originalSide ? 1 : -1
+  return term.side === term.originalSide
+    ? term.originalSign
+    : (term.originalSign === 1 ? -1 : 1)
 }
 
 export function isTermPositionCorrect(term: PlacedTerm) {
