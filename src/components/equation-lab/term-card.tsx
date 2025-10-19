@@ -1,25 +1,18 @@
 "use client"
-import { MathJax } from "better-react-mathjax"
 import { useDraggable } from "@dnd-kit/core"
-import { CSS } from "@dnd-kit/utilities"
+import { MathJax } from "better-react-mathjax"
 import { RefreshCcw } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+import type { DragData, DragType, Side, TermLabels } from "./types"
 import {
   formatCardTeX,
-  getPlacedCoeff,
   getCardStatusClass,
+  getPlacedCoeff,
   isTermPositionCorrect,
   isTermSignCorrect,
 } from "./utils"
-import type {
-  DragData,
-  DragType,
-  PlacedTerm,
-  Side,
-  TermLabels,
-} from "./types"
 
 type TermCardProps = {
   id: string
@@ -57,12 +50,6 @@ export function TermCard({
     data,
   })
 
-  const style = isDragging
-    ? { opacity: 0 }
-    : transform
-      ? { transform: CSS.Translate.toString(transform) }
-      : undefined
-
   const isActive = activeId === id
   const isSource = dragType === "source"
 
@@ -81,11 +68,16 @@ export function TermCard({
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={
+        transform
+          ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+          : undefined
+      }
       className={cn(
         "relative flex cursor-grab flex-col items-center justify-center gap-1 rounded-lg border px-4 py-3 text-lg font-semibold text-foreground shadow-sm transition-colors",
         statusClass,
-        (isDragging || isActive) && "cursor-grabbing border-primary bg-primary/15 shadow-md"
+        isActive && "border-primary bg-primary/15 shadow-md",
+        isDragging && "opacity-0"
       )}
       aria-label={ariaLabel}
       data-side={side}
@@ -153,12 +145,4 @@ export function DragPreview({ data, labels, showHelper }: DragPreviewProps) {
       ) : null}
     </div>
   )
-}
-
-export function createTermCardData(term: SourceTerm | PlacedTerm): DragData {
-  if ("instanceId" in term) {
-    return { type: "placed", term }
-  }
-
-  return { type: "source", term }
 }
