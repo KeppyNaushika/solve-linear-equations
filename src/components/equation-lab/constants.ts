@@ -7,7 +7,7 @@ export const DROP_ZONE_ID = {
   right: "drop-right",
 } as const
 
-export const TERM_LABEL_STORAGE_KEY = "linear-equation-lab:term-label-settings"
+export const TERM_LABEL_STORAGE_KEY = "solve-linear-equations:term-label-settings"
 
 export const defaultTermLabelSettings: TermLabelSettingsState = {
   showHelper: true,

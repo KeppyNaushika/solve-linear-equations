@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "一次方程式ラボ",
+  title: "一次方程式を解こう！",
   description: "一次方程式をドラッグ＆ドロップで解く練習アプリ",
 }
 
